@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: it-support-system
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT it_support_system.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.4
+      - key: DEBUG
+        value: False
