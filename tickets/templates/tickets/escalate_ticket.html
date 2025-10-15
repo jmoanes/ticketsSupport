@@ -1,0 +1,109 @@
+{% extends 'tickets/base.html' %}
+{% load static %}
+
+{% block title %}Escalate Ticket - {{ ticket.ticket_id }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="bi bi-arrow-up-circle"></i> Escalate Ticket
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Ticket Info -->
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading">{{ ticket.ticket_id }} - {{ ticket.title }}</h6>
+                    <p class="mb-0">Current Status: <span class="badge bg-{{ ticket.get_status_color }}">{{ ticket.get_status_display }}</span></p>
+                    <p class="mb-0">Priority: <span class="badge bg-{{ ticket.get_priority_color }}">{{ ticket.get_priority_display }}</span></p>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Escalation Notice:</strong> When you escalate this ticket, it will be automatically assigned to the selected IT staff member and they will receive an email notification at their registered email address.
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="bi bi-envelope"></i>
+                    <strong>Primary Escalation Contact:</strong> johnjaymoanes009@gmail.com
+                    <br><small>This email will also receive escalation notifications for critical issues.</small>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="escalated_to" class="form-label">Escalate To *</label>
+                        <select class="form-select" id="escalated_to" name="escalated_to" required>
+                            <option value="">Select IT staff member</option>
+                            <option value="primary_escalation" style="background-color: #fff3cd; font-weight: bold;">
+                                🚨 Primary Escalation Contact - johnjaymoanes009@gmail.com
+                            </option>
+                            <option disabled>─────────────────────────────</option>
+                            {% for staff in it_staff %}
+                                <option value="{{ staff.id }}">
+                                    {{ staff.get_full_name|default:staff.username }}
+                                    {% if staff.email %} - {{ staff.email }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Select the IT staff member who should handle this escalated ticket. The primary escalation contact will always receive a copy of the notification.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="escalation_reason" class="form-label">Escalation Reason</label>
+                        <textarea class="form-control" id="escalation_reason" name="escalation_reason" rows="3" 
+                                  placeholder="Please explain why this ticket needs to be escalated..."></textarea>
+                        <div class="form-text">Optional: Provide a reason for the escalation to help the assigned staff member understand the urgency.</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'tickets:ticket_detail' ticket.ticket_id %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-warning" id="escalateBtn" onclick="return confirmEscalation()">
+                            <i class="bi bi-arrow-up-circle"></i> Escalate Ticket
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmEscalation() {
+    const escalatedTo = document.getElementById('escalated_to').value;
+    const escalationReason = document.getElementById('escalation_reason').value;
+    
+    if (!escalatedTo) {
+        alert('Please select someone to escalate the ticket to.');
+        return false;
+    }
+    
+    let confirmMessage = 'Are you sure you want to escalate this ticket?';
+    
+    if (escalatedTo === 'primary_escalation') {
+        confirmMessage = '🚨 URGENT: You are escalating this ticket directly to the PRIMARY ESCALATION CONTACT (johnjaymoanes009@gmail.com).\n\nThis will send an immediate email notification to the primary contact.\n\nAre you sure you want to proceed?';
+    } else if (escalationReason.trim()) {
+        confirmMessage = `Are you sure you want to escalate this ticket?\n\nEscalation reason: "${escalationReason}"`;
+    }
+    
+    return confirm(confirmMessage);
+}
+
+// Highlight the primary escalation option when selected
+document.getElementById('escalated_to').addEventListener('change', function() {
+    const escalateBtn = document.getElementById('escalateBtn');
+    if (this.value === 'primary_escalation') {
+        escalateBtn.className = 'btn btn-danger';
+        escalateBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Escalate to Primary Contact';
+    } else {
+        escalateBtn.className = 'btn btn-warning';
+        escalateBtn.innerHTML = '<i class="bi bi-arrow-up-circle"></i> Escalate Ticket';
+    }
+});
+</script>
+{% endblock %}

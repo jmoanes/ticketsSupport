@@ -1,0 +1,111 @@
+{% extends 'tickets/base.html' %}
+{% load static %}
+
+{% block title %}Calendar - IT Support System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-calendar"></i> Ticket Calendar
+                </h4>
+                <div>
+                    <a href="{% url 'tickets:create_ticket' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus"></i> New Ticket
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if calendar_data %}
+                    <div class="row">
+                        {% for date, tickets in calendar_data.items %}
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-calendar-date"></i> 
+                                        {{ date|date:"F d, Y" }}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    {% for ticket in tickets %}
+                                    <div class="d-flex align-items-center mb-2 p-2 border rounded">
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold">
+                                                <a href="{% url 'tickets:ticket_detail' ticket.ticket_id %}" 
+                                                   class="text-decoration-none">
+                                                    {{ ticket.ticket_id }}
+                                                </a>
+                                            </div>
+                                            <div class="text-truncate" style="max-width: 200px;" title="{{ ticket.title }}">
+                                                {{ ticket.title }}
+                                            </div>
+                                            <div class="small text-muted">
+                                                <span class="badge bg-{{ ticket.get_priority_color }} me-1">
+                                                    {{ ticket.get_priority_display }}
+                                                </span>
+                                                <span class="badge bg-{{ ticket.get_status_color }}">
+                                                    {{ ticket.get_status_display }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No tickets with deadlines</h5>
+                        <p class="text-muted">Tickets with deadlines will appear here in calendar view.</p>
+                        <a href="{% url 'tickets:create_ticket' %}" class="btn btn-primary">
+                            <i class="bi bi-plus"></i> Create Ticket with Deadline
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Calendar Legend -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle"></i> Legend
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Priority Levels:</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-success">Low</span>
+                            <span class="badge bg-warning">Medium</span>
+                            <span class="badge bg-danger">High</span>
+                            <span class="badge bg-dark">Urgent</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Status Types:</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-primary">Open</span>
+                            <span class="badge bg-info">In Progress</span>
+                            <span class="badge bg-success">Resolved</span>
+                            <span class="badge bg-secondary">Closed</span>
+                            <span class="badge bg-warning">Escalated</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

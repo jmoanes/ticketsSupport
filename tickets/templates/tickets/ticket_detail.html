@@ -1,0 +1,246 @@
+{% extends 'tickets/base.html' %}
+{% load static %}
+
+{% block title %}{{ ticket.ticket_id }} - {{ ticket.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Ticket Details -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-ticket-perforated"></i> {{ ticket.ticket_id }}
+                </h4>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'tickets:export_single_ticket_pdf' ticket.ticket_id %}" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-file-pdf"></i> Export PDF
+                    </a>
+                    {% if can_escalate %}
+                    <a href="{% url 'tickets:escalate_ticket' ticket.ticket_id %}" class="btn btn-warning btn-sm">
+                        <i class="bi bi-arrow-up-circle"></i> Escalate
+                    </a>
+                    {% endif %}
+                    {% if is_it_staff %}
+                    <a href="{% url 'tickets:update_ticket_status' ticket.ticket_id %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-pencil"></i> Update Status
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <h5>{{ ticket.title }}</h5>
+                        <p class="text-muted">{{ ticket.description }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex flex-column gap-2">
+                            <div>
+                                <strong>Status:</strong>
+                                <span class="badge bg-{{ ticket.get_status_color }} ms-2">
+                                    {{ ticket.get_status_display }}
+                                </span>
+                            </div>
+                            <div>
+                                <strong>Priority:</strong>
+                                <span class="badge bg-{{ ticket.get_priority_color }} ms-2">
+                                    {{ ticket.get_priority_display }}
+                                </span>
+                            </div>
+                            <div>
+                                <strong>Category:</strong>
+                                <span class="badge bg-info ms-2">
+                                    {{ ticket.get_category_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <strong>Created by:</strong> {{ ticket.created_by.get_full_name|default:ticket.created_by.username }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Created:</strong> {{ ticket.created_at|date:"M d, Y H:i" }}
+                        </div>
+                        {% if ticket.deadline %}
+                        <div class="mb-2">
+                            <strong>Deadline:</strong> 
+                            <span class="{% if ticket.deadline < today %}text-danger{% else %}text-success{% endif %}">
+                                {{ ticket.deadline|date:"M d, Y" }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {% if ticket.assigned_to %}
+                        <div class="mb-2">
+                            <strong>Assigned to:</strong> {{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.username }}
+                        </div>
+                        {% endif %}
+                        {% if ticket.escalated_to %}
+                        <div class="mb-2">
+                            <strong>Escalated to:</strong> {{ ticket.escalated_to.get_full_name|default:ticket.escalated_to.username }}
+                        </div>
+                        {% endif %}
+                        <div class="mb-2">
+                            <strong>Last updated:</strong> {{ ticket.updated_at|date:"M d, Y H:i" }}
+                        </div>
+                        {% if ticket.resolved_at %}
+                        <div class="mb-2">
+                            <strong>Resolved:</strong> {{ ticket.resolved_at|date:"M d, Y H:i" }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-chat-dots"></i> Comments
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Add Comment Form -->
+                <form method="post" class="mb-4">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ comment_form.message }}
+                        {% if comment_form.message.errors %}
+                            <div class="text-danger small">{{ comment_form.message.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% if is_it_staff and comment_form.is_internal %}
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ comment_form.is_internal }}
+                            <label class="form-check-label" for="{{ comment_form.is_internal.id_for_label }}">
+                                Internal comment (visible only to IT staff)
+                            </label>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send"></i> Add Comment
+                    </button>
+                </form>
+
+                <!-- Comments List -->
+                {% if comments %}
+                    {% for comment in comments %}
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 40px; height: 40px;">
+                                {{ comment.author.username|first|upper }}
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ comment.author.get_full_name|default:comment.author.username }}</strong>
+                                    {% if comment.is_internal %}
+                                        <span class="badge bg-warning ms-2">Internal</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                            <div class="mt-2">{{ comment.message|linebreaks }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-chat-dots fs-1"></i>
+                        <p class="mt-2">No comments yet. Be the first to comment!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Attachments -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-paperclip"></i> Attachments
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Upload Form -->
+                <form method="post" enctype="multipart/form-data" class="mb-3">
+                    {% csrf_token %}
+                    <div class="mb-2">
+                        <input type="file" class="form-control form-control-sm" name="attachment" 
+                               accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.zip,.rar">
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-upload"></i> Upload
+                    </button>
+                </form>
+
+                <!-- Attachments List -->
+                {% if attachments %}
+                    {% for attachment in attachments %}
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                        <div>
+                            <i class="bi bi-file-earmark"></i>
+                            <a href="{{ attachment.file.url }}" target="_blank" class="text-decoration-none">
+                                {{ attachment.original_filename }}
+                            </a>
+                            <br>
+                            <small class="text-muted">
+                                {{ attachment.get_file_size_display }} • 
+                                {{ attachment.uploaded_by.username }} • 
+                                {{ attachment.uploaded_at|date:"M d, Y" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-paperclip fs-3"></i>
+                        <p class="mt-2 small">No attachments</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning"></i> Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'tickets:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                    {% if is_it_staff %}
+                    <a href="{% url 'tickets:update_ticket_status' ticket.ticket_id %}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Update Status
+                    </a>
+                    {% if can_escalate %}
+                    <a href="{% url 'tickets:escalate_ticket' ticket.ticket_id %}" class="btn btn-outline-warning">
+                        <i class="bi bi-arrow-up-circle"></i> Escalate Ticket
+                    </a>
+                    {% endif %}
+                    {% endif %}
+                    <a href="{% url 'tickets:create_ticket' %}" class="btn btn-outline-success">
+                        <i class="bi bi-plus"></i> Create New Ticket
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

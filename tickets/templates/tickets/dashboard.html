@@ -1,0 +1,319 @@
+{% extends 'tickets/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - IT Support System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Analytics Cards -->
+    <div class="col-12 mb-4">
+        <div class="row">
+            <div class="col-md-2 col-sm-6 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-ticket-perforated fs-1"></i>
+                        <h5 class="card-title mt-2">{{ analytics.total_tickets }}</h5>
+                        <p class="card-text">Total Tickets</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6 mb-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-clock fs-1"></i>
+                        <h5 class="card-title mt-2">{{ analytics.open_tickets }}</h5>
+                        <p class="card-text">Open</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6 mb-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-gear fs-1"></i>
+                        <h5 class="card-title mt-2">{{ analytics.in_progress_tickets }}</h5>
+                        <p class="card-text">In Progress</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-check-circle fs-1"></i>
+                        <h5 class="card-title mt-2">{{ analytics.resolved_tickets }}</h5>
+                        <p class="card-text">Resolved</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6 mb-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-exclamation-triangle fs-1"></i>
+                        <h5 class="card-title mt-2">{{ analytics.escalated_tickets }}</h5>
+                        <p class="card-text">Escalated</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6 mb-3">
+                <div class="card bg-dark text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-lightning fs-1"></i>
+                        <h5 class="card-title mt-2">{{ analytics.urgent_tickets }}</h5>
+                        <p class="card-text">Urgent</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Filters and Search -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Search tickets..." value="{{ current_filters.search }}">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" name="status">
+                            <option value="">All Statuses</option>
+                            {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" name="priority">
+                            <option value="">All Priorities</option>
+                            {% for value, label in priority_choices %}
+                                <option value="{{ value }}" {% if current_filters.priority == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" name="category">
+                            <option value="">All Categories</option>
+                            {% for value, label in category_choices %}
+                                <option value="{{ value }}" {% if current_filters.category == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Filter
+                        </button>
+                        <a href="{% url 'tickets:dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </form>
+                
+                <!-- Export Buttons -->
+                {% if user.profile.is_it_staff %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <span class="text-muted me-2">Export:</span>
+                            <a href="{% url 'tickets:export_tickets_pdf' %}?{{ request.GET.urlencode }}" 
+                               class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-file-pdf"></i> PDF
+                            </a>
+                            <a href="{% url 'tickets:export_tickets_excel' %}?{{ request.GET.urlencode }}" 
+                               class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-file-excel"></i> Excel
+                            </a>
+                            <a href="{% url 'tickets:export_analytics_pdf' %}" 
+                               class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-graph-up"></i> Analytics PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Tickets List -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ul"></i> 
+                    {% if is_it_staff %}All Tickets{% else %}My Tickets{% endif %}
+                </h5>
+                <a href="{% url 'tickets:create_ticket' %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus"></i> New Ticket
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ticket ID</th>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    {% if is_it_staff %}
+                                    <th>Created By</th>
+                                    <th>Assigned To</th>
+                                    {% endif %}
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ticket in page_obj %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'tickets:ticket_detail' ticket.ticket_id %}" 
+                                           class="text-decoration-none fw-bold">
+                                            {{ ticket.ticket_id }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 200px;" title="{{ ticket.title }}">
+                                            {{ ticket.title }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ ticket.get_status_color }}">
+                                            {{ ticket.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ ticket.get_priority_color }}">
+                                            {{ ticket.get_priority_display }}
+                                        </span>
+                                    </td>
+                                    {% if is_it_staff %}
+                                    <td>{{ ticket.created_by.username }}</td>
+                                    <td>
+                                        {% if ticket.assigned_to %}
+                                            {{ ticket.assigned_to.username }}
+                                        {% else %}
+                                            <span class="text-muted">Unassigned</span>
+                                        {% endif %}
+                                    </td>
+                                    {% endif %}
+                                    <td>{{ ticket.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'tickets:ticket_detail' ticket.ticket_id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if is_it_staff %}
+                                        <a href="{% url 'tickets:update_ticket_status' ticket.ticket_id %}" 
+                                           class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <div class="card-footer">
+                        <nav aria-label="Tickets pagination">
+                            <ul class="pagination pagination-sm justify-content-center mb-0">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.priority %}&priority={{ current_filters.priority }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}">First</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.priority %}&priority={{ current_filters.priority }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}">Previous</a>
+                                    </li>
+                                {% endif %}
+                                
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.priority %}&priority={{ current_filters.priority }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}">Next</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.priority %}&priority={{ current_filters.priority }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}">Last</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No tickets found</h5>
+                        <p class="text-muted">Create your first ticket to get started!</p>
+                        <a href="{% url 'tickets:create_ticket' %}" class="btn btn-primary">
+                            <i class="bi bi-plus"></i> Create Ticket
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i> Recent Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_comments %}
+                    {% for comment in recent_comments %}
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 40px; height: 40px;">
+                                {{ comment.author.username|first|upper }}
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="fw-bold">{{ comment.author.username }}</div>
+                            <div class="text-muted small">
+                                <a href="{% url 'tickets:ticket_detail' comment.ticket.ticket_id %}" 
+                                   class="text-decoration-none">
+                                    {{ comment.ticket.ticket_id }}
+                                </a>
+                                • {{ comment.created_at|timesince }} ago
+                            </div>
+                            <div class="text-truncate" style="max-width: 200px;">
+                                {{ comment.message }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="bi bi-chat-dots fs-1"></i>
+                        <p class="mt-2">No recent activity</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,298 @@
+{% extends 'tickets/base.html' %}
+{% load static %}
+
+{% block title %}Analytics - IT Support System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin: 1rem 0;
+    }
+    
+    .stat-card {
+        transition: transform 0.2s ease-in-out;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2>
+                    <i class="bi bi-graph-up"></i> Analytics Dashboard
+                </h2>
+                <p class="text-muted">Comprehensive overview of ticket statistics and performance metrics</p>
+            </div>
+            {% if user.profile.is_it_staff %}
+            <div class="d-flex gap-2">
+                <a href="{% url 'tickets:export_analytics_pdf' %}" 
+                   class="btn btn-outline-danger">
+                    <i class="bi bi-file-pdf"></i> Export PDF
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="row mb-4">
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="card stat-card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-ticket-perforated fs-1"></i>
+                <h3 class="card-title mt-2">{{ total_tickets }}</h3>
+                <p class="card-text">Total Tickets</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="card stat-card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-clock fs-1"></i>
+                <h3 class="card-title mt-2">{{ open_tickets }}</h3>
+                <p class="card-text">Open</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="card stat-card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-gear fs-1"></i>
+                <h3 class="card-title mt-2">{{ in_progress_tickets }}</h3>
+                <p class="card-text">In Progress</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="card stat-card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle fs-1"></i>
+                <h3 class="card-title mt-2">{{ resolved_tickets }}</h3>
+                <p class="card-text">Resolved</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="card stat-card bg-danger text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-triangle fs-1"></i>
+                <h3 class="card-title mt-2">{{ escalated_tickets }}</h3>
+                <p class="card-text">Escalated</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="card stat-card bg-dark text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-hourglass-split fs-1"></i>
+                <h3 class="card-title mt-2">{{ avg_resolution_hours }}</h3>
+                <p class="card-text">Avg Resolution (hrs)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Statistics -->
+<div class="row">
+    <!-- Tickets by Category -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pie-chart"></i> Tickets by Category
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if category_stats %}
+                    {% for stat in category_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="badge bg-info me-2">{{ stat.category|title }}</span>
+                            <span class="fw-bold">{{ stat.count }}</span> tickets
+                        </div>
+                        <div class="progress" style="width: 100px; height: 8px;">
+                            <div class="progress-bar bg-info" role="progressbar" 
+                                 style="width: {% widthratio stat.count total_tickets 100 %}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-pie-chart fs-1"></i>
+                        <p class="mt-2">No category data available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tickets by Priority -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-bar-chart"></i> Tickets by Priority
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if priority_stats %}
+                    {% for stat in priority_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="badge bg-{% if stat.priority == 'low' %}success{% elif stat.priority == 'medium' %}warning{% elif stat.priority == 'high' %}danger{% else %}dark{% endif %} me-2">
+                                {{ stat.priority|title }}
+                            </span>
+                            <span class="fw-bold">{{ stat.count }}</span> tickets
+                        </div>
+                        <div class="progress" style="width: 100px; height: 8px;">
+                            <div class="progress-bar bg-{% if stat.priority == 'low' %}success{% elif stat.priority == 'medium' %}warning{% elif stat.priority == 'high' %}danger{% else %}dark{% endif %}" 
+                                 role="progressbar" style="width: {% widthratio stat.count total_tickets 100 %}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-bar-chart fs-1"></i>
+                        <p class="mt-2">No priority data available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Tickets by Status -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up"></i> Tickets by Status
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if status_stats %}
+                    {% for stat in status_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="badge bg-{% if stat.status == 'open' %}primary{% elif stat.status == 'in_progress' %}info{% elif stat.status == 'resolved' %}success{% elif stat.status == 'closed' %}secondary{% else %}warning{% endif %} me-2">
+                                {{ stat.status|title }}
+                            </span>
+                            <span class="fw-bold">{{ stat.count }}</span> tickets
+                        </div>
+                        <div class="progress" style="width: 100px; height: 8px;">
+                            <div class="progress-bar bg-{% if stat.status == 'open' %}primary{% elif stat.status == 'in_progress' %}info{% elif stat.status == 'resolved' %}success{% elif stat.status == 'closed' %}secondary{% else %}warning{% endif %}" 
+                                 role="progressbar" style="width: {% widthratio stat.count total_tickets 100 %}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-graph-up fs-1"></i>
+                        <p class="mt-2">No status data available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i> Recent Activity (30 days)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-primary">{{ recent_tickets }}</h4>
+                            <p class="text-muted mb-0">New Tickets</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success">{{ recent_resolved }}</h4>
+                        <p class="text-muted mb-0">Resolved</p>
+                    </div>
+                </div>
+                
+                {% if recent_tickets > 0 %}
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Resolution Rate</span>
+                        <span class="fw-bold">
+                            {% widthratio recent_resolved recent_tickets 100 %}%
+                        </span>
+                    </div>
+                    <div class="progress mt-1">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {% widthratio recent_resolved recent_tickets 100 %}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Metrics -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-speedometer2"></i> Performance Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="p-3">
+                            <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                            <h4 class="mt-2">{{ resolved_tickets }}</h4>
+                            <p class="text-muted">Tickets Resolved</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="p-3">
+                            <i class="bi bi-clock-fill text-warning fs-1"></i>
+                            <h4 class="mt-2">{{ avg_resolution_hours }}</h4>
+                            <p class="text-muted">Avg Resolution Time (hrs)</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="p-3">
+                            <i class="bi bi-arrow-up-circle-fill text-danger fs-1"></i>
+                            <h4 class="mt-2">{{ escalated_tickets }}</h4>
+                            <p class="text-muted">Escalated Tickets</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="p-3">
+                            {% if total_tickets > 0 %}
+                                {% widthratio resolved_tickets total_tickets 100 as resolution_rate %}
+                            {% else %}
+                                {% with resolution_rate=0 %}{% endwith %}
+                            {% endif %}
+                            <i class="bi bi-percent text-info fs-1"></i>
+                            <h4 class="mt-2">{{ resolution_rate }}%</h4>
+                            <p class="text-muted">Resolution Rate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

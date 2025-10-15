@@ -1,0 +1,222 @@
+{% extends 'tickets/base.html' %}
+{% load static %}
+
+{% block title %}Chat - IT Support System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        height: 500px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        background-color: #f8f9fa;
+    }
+    
+    [data-bs-theme="dark"] .chat-container {
+        background-color: #2d2d2d;
+        border-color: #495057;
+    }
+    
+    .chat-message {
+        max-width: 70%;
+        word-wrap: break-word;
+        margin-bottom: 1rem;
+    }
+    
+    .chat-message.sent {
+        margin-left: auto;
+        background-color: #0d6efd;
+        color: white;
+        border-radius: 1rem 1rem 0.25rem 1rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .chat-message.received {
+        background-color: white;
+        color: #212529;
+        border-radius: 1rem 1rem 1rem 0.25rem;
+        padding: 0.5rem 1rem;
+        border: 1px solid #dee2e6;
+    }
+    
+    [data-bs-theme="dark"] .chat-message.received {
+        background-color: #3d3d3d;
+        color: #e9ecef;
+        border-color: #495057;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        opacity: 0.7;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="bi bi-chat"></i> Chat Room
+                </h4>
+            </div>
+            <div class="card-body p-0">
+                <!-- Chat Messages Container -->
+                <div id="messages-container" class="chat-container">
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-chat-dots fs-1"></i>
+                        <p class="mt-2">Select a user to start chatting</p>
+                    </div>
+                </div>
+                
+                <!-- Chat Input -->
+                <div class="p-3 border-top">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <select class="form-select" id="user-select">
+                                <option value="">Select user to chat with</option>
+                                {% for user in chat_users %}
+                                    <option value="{{ user.id }}">
+                                        {{ user.get_full_name|default:user.username }}
+                                        {% if user.profile.is_it_staff %}(IT Staff){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="message-input" 
+                                   placeholder="Type your message..." disabled>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-primary w-100" id="send-button" disabled>
+                                <i class="bi bi-send"></i> Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Available Users -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-people"></i> Available Users
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if chat_users %}
+                    {% for user in chat_users %}
+                    <div class="d-flex align-items-center mb-3 p-2 border rounded user-item" 
+                         data-user-id="{{ user.id }}" style="cursor: pointer;">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 40px; height: 40px;">
+                                {{ user.username|first|upper }}
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                            <div class="small text-muted">
+                                {% if user.profile.is_it_staff %}
+                                    <span class="badge bg-info">IT Staff</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">User</span>
+                                {% endif %}
+                                {% if user.profile.department %}
+                                    • {{ user.profile.department }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-person-x fs-3"></i>
+                        <p class="mt-2">No users available for chat</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Messages -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i> Recent Messages
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_messages %}
+                    {% for message in recent_messages %}
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 30px; height: 30px; font-size: 0.75rem;">
+                                {{ message.sender.username|first|upper }}
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-2">
+                            <div class="fw-bold small">{{ message.sender.username }}</div>
+                            <div class="text-truncate" style="max-width: 150px;" title="{{ message.message }}">
+                                {{ message.message }}
+                            </div>
+                            <div class="text-muted" style="font-size: 0.7rem;">
+                                {{ message.timestamp|timesince }} ago
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-chat-dots fs-3"></i>
+                        <p class="mt-2 small">No recent messages</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // User selection from list
+    const userItems = document.querySelectorAll('.user-item');
+    const userSelect = document.getElementById('user-select');
+    
+    userItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            userSelect.value = userId;
+            userSelect.dispatchEvent(new Event('change'));
+            
+            // Update visual selection
+            userItems.forEach(i => i.classList.remove('bg-light'));
+            this.classList.add('bg-light');
+        });
+    });
+    
+    // Enable/disable input based on user selection
+    userSelect.addEventListener('change', function() {
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        
+        if (this.value) {
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            messageInput.focus();
+        } else {
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+        }
+    });
+});
+</script>
+{% endblock %}

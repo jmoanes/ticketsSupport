@@ -1,0 +1,125 @@
+{% extends 'tickets/base.html' %}
+{% load static %}
+
+{% block title %}Create Ticket - IT Support System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="bi bi-plus-circle"></i> Create New Support Ticket
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">Title *</label>
+                                {{ form.title }}
+                                {% if form.title.errors %}
+                                    <div class="text-danger small">{{ form.title.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">{{ form.title.help_text }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.priority.id_for_label }}" class="form-label">Priority *</label>
+                                {{ form.priority }}
+                                {% if form.priority.errors %}
+                                    <div class="text-danger small">{{ form.priority.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">{{ form.priority.help_text }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.category.id_for_label }}" class="form-label">Category *</label>
+                                {{ form.category }}
+                                {% if form.category.errors %}
+                                    <div class="text-danger small">{{ form.category.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">{{ form.category.help_text }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.deadline.id_for_label }}" class="form-label">Deadline</label>
+                                {{ form.deadline }}
+                                {% if form.deadline.errors %}
+                                    <div class="text-danger small">{{ form.deadline.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">{{ form.deadline.help_text }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description *</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text">{{ form.description.help_text }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="attachments" class="form-label">Attachments</label>
+                        <input type="file" class="form-control" id="attachments" name="attachments" multiple 
+                               accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.zip,.rar">
+                        <div class="form-text">Upload files (PDF, DOC, images, etc.) - Max 10MB per file. You can select multiple files.</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'tickets:dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Create Ticket
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-question-circle"></i> Need Help?
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Priority Guidelines:</h6>
+                        <ul class="list-unstyled">
+                            <li><span class="badge bg-success me-2">Low</span> General questions, minor issues</li>
+                            <li><span class="badge bg-warning me-2">Medium</span> Standard support requests</li>
+                            <li><span class="badge bg-danger me-2">High</span> Urgent issues affecting work</li>
+                            <li><span class="badge bg-dark me-2">Urgent</span> Critical system failures</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Category Guidelines:</h6>
+                        <ul class="list-unstyled">
+                            <li><span class="badge bg-info me-2">Hardware</span> Computer, printer, network equipment</li>
+                            <li><span class="badge bg-info me-2">Software</span> Applications, programs, licenses</li>
+                            <li><span class="badge bg-info me-2">Network</span> Internet, VPN, connectivity issues</li>
+                            <li><span class="badge bg-info me-2">Access</span> Account permissions, passwords</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
