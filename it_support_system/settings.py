@@ -155,12 +155,12 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'johnjaymoanes25@gmail.com'  # Your Gmail address
-EMAIL_HOST_PASSWORD = 'thmevwqlkkidqaot'  # Your Gmail app password
-DEFAULT_FROM_EMAIL = 'IT Support System <johnjaymoanes25@gmail.com>'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'johnjaymoanes25@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'thmevwqlkkidqaot')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'IT Support System <johnjaymoanes25@gmail.com>')
 
 # Primary escalation contact email
-PRIMARY_ESCALATION_EMAIL = 'johnjaymoanes009@gmail.com'
+PRIMARY_ESCALATION_EMAIL = os.environ.get('PRIMARY_ESCALATION_EMAIL', 'johnjaymoanes009@gmail.com')
 
 # Email settings for HTML emails
 EMAIL_USE_HTML = True
